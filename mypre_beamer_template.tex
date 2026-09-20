@@ -1,0 +1,127 @@
+% !TeX program = xelatex
+\documentclass[aspectratio=169,11pt]{beamer}
+
+% Put beamerthemeMyPre.sty in the same directory as this file.
+\usetheme{MyPre}
+
+% -----------------------------------------------------------------------------
+% Basic information
+% -----------------------------------------------------------------------------
+\title{Function Secret Sharing:\\[-1mm]Distributed Comparison Function}
+\author{Artemis}
+\date{2026.7.15}
+
+\begin{document}
+
+% Cover: deliberately unnumbered.
+\begin{frame}[plain,noframenumbering]
+  \titlepage
+\end{frame}
+
+% -----------------------------------------------------------------------------
+% Contents page
+% It appears before the first numbered section, so the theme renders "Contents"
+% as a single first-level title and keeps the following section numbering at I.
+% -----------------------------------------------------------------------------
+\begin{frame}[t]{Contents}
+  % Demo: vertical top alignment + horizontal left alignment.
+  \begin{MyPreContent}[top][left]
+    \vspace{-1.5mm}
+    \tableofcontents
+  \end{MyPreContent}
+\end{frame}
+
+% -----------------------------------------------------------------------------
+% Manual alignment for each content group
+% Keep the frame itself as [t], then wrap a group with MyPreContent:
+%   \begin{MyPreContent}[top][left]       ... \end{MyPreContent}
+%   \begin{MyPreContent}[top][center]     ... \end{MyPreContent}
+%   \begin{MyPreContent}[center][left]    ... \end{MyPreContent}
+%   \begin{MyPreContent}[center][center]  ... \end{MyPreContent}
+% -----------------------------------------------------------------------------
+
+% -----------------------------------------------------------------------------
+% Example section + frames
+% Level 1 title: I. Review
+% Level 2 title: only the frame topic, e.g. DPF Invariants
+% -----------------------------------------------------------------------------
+\section{Review}
+
+% Each second-level heading is declared as a subsection so it also appears in
+% the contents page.  The frame title uses the same text, which keeps the
+% upper-left two-level heading visually consistent.
+\subsection{Distributed Point Function}
+\begin{frame}[t]{Distributed Point Function}
+  \begin{MyPreContent}[top][left]
+  \begin{block}{Definition}
+    A point function can be written as
+    \[
+      f_{\alpha,\beta}(x)=
+      \begin{cases}
+        \beta, & x=\alpha,\\
+        0,     & x\neq\alpha.
+      \end{cases}
+    \]
+  \end{block}
+
+  \vspace{2mm}
+  \begin{itemize}
+    \item This area intentionally uses a conventional mathematical Beamer style.
+    \item English text is Times New Roman; Chinese text is 楷体。
+    \item The page number is fixed at the lower-right corner.
+  \end{itemize}
+  \end{MyPreContent}
+\end{frame}
+
+\subsection{DPF Invariants}
+\begin{frame}[t]{DPF Invariants}
+  \begin{MyPreContent}[top][left]
+  Let $k_b$ be the key held by party $P_b$. A typical invariant is
+  \[
+    t_0 \oplus t_1 =
+    \begin{cases}
+      1, & \text{on the special path},\\
+      0, & \text{otherwise}.
+    \end{cases}
+  \]
+
+  \begin{theorem}[Example]
+    If the correction words preserve the invariant at every level, the two
+    evaluations reconstruct the desired point-function output.
+  \end{theorem}
+
+  \begin{proof}
+    Apply the invariant recursively from the root to the leaf, then combine the
+    final correction word with the leaf payload.
+  \end{proof}
+  \end{MyPreContent}
+\end{frame}
+
+\section{Construction}
+
+\subsection{A Classical Mathematical Slide}
+\begin{frame}[t]{A Classical Mathematical Slide}
+  \begin{MyPreContent}[top][left]
+  \begin{columns}[T,onlytextwidth]
+    \column{0.49\textwidth}
+      \begin{block}{Protocol sketch}
+        \begin{enumerate}
+          \item Sample seeds.
+          \item Expand with a PRG.
+          \item Apply correction words.
+          \item Reconstruct the output.
+        \end{enumerate}
+      \end{block}
+
+    \column{0.47\textwidth}
+      \[
+        \Pr[\mathsf{View}_0 \approx_c \mathsf{View}_1]
+        \ge 1-\operatorname{negl}(\lambda).
+      \]
+
+      中文示例：这一段会自动使用楷体；英文仍使用 Times New Roman。
+  \end{columns}
+  \end{MyPreContent}
+\end{frame}
+
+\end{document}
