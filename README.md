@@ -158,12 +158,12 @@ The cover shows the author as `Presenter: ...`.
 
 The lower-right page number uses a prominent 12 pt bold size.
 
-## Alignment / 对齐
+## Manual alignment
 
-每一页正文区域可以手动选择 **垂直上对齐 / 垂直居中**，以及 **水平左对齐 / 水平居中**。为了让垂直位置可控，建议 frame 一律写成 `[t]`，然后用 `MyPreContent` 包住该页主要内容：
-
-Use `MyPreContent` inside a `[t]` frame to choose the alignment of each major
-content group. The four combinations are:
+Each slide's content area can be aligned manually, both vertically (top or
+centre) and horizontally (left or centre). To keep the vertical position
+predictable, write every frame as `[t]` and wrap the slide's main content in
+`MyPreContent`. The four combinations are:
 
 ```latex
 \begin{MyPreContent}[top][left]       ... \end{MyPreContent}
@@ -174,8 +174,10 @@ content group. The four combinations are:
 
 Both arguments are optional and default to `[top][left]`.
 
-Note that `left` means `\raggedright`, so content inside `MyPreContent` is
-**not** justified, while content outside it keeps beamer's default justification.
-Mixing the two on one slide therefore gives inconsistent alignment.
+> Note: `left` means `\raggedright`, so text inside `MyPreContent` is **not**
+> justified, while content outside it keeps beamer's default justification.
+> Mixing the two on one slide gives inconsistent alignment.
 
-> 目录条目的水平对齐由主题里的 `section in toc` / `subsection in toc` 模板决定，**不在**这两个模板里写 `\centering`，因此目录会跟随 frame 的对齐设置（默认左对齐）。
+The horizontal alignment of the contents entries is decided by the theme's
+`section in toc` / `subsection in toc` templates. Neither writes `\centering`,
+so the contents list follows the frame's alignment setting (left by default).
