@@ -10,6 +10,15 @@
 \RequirePackage{newtxmath}
 \RequirePackage{etoolbox}
 \RequirePackage{xparse}
+\RequirePackage{multicol}
+
+% newtxmath points \operator@font at its own "operators" symbol font, whose TFM
+% (ntxr) no longer ships with the OTF-based newtx.  Upright math operators
+% (\Pr, \operatorname, \lim, \log, ...) would then fall back to Latin Modern.
+% Restore the amsmath default so they use the fontspec math roman instead.
+\makeatletter
+\renewcommand{\operator@font}{\mathrm}
+\makeatother
 
 \definecolor{MyPreNavy}{RGB}{50,66,116}     % #324274
 \definecolor{MyPreSubNavy}{RGB}{87,101,139} % #57658B
@@ -19,9 +28,9 @@
   \setsansfont{Times New Roman}
   \setmonofont{Times New Roman}
 }{%
-  \setmainfont{TeXGyreTermes}
-  \setsansfont{TeXGyreTermes}
-  \setmonofont{TeXGyreTermes}
+  \setmainfont{TeX Gyre Termes}
+  \setsansfont{TeX Gyre Termes}
+  \setmonofont{TeX Gyre Termes}
 }
 
 \IfFontExistsTF{KaiTi}{%
@@ -145,6 +154,144 @@
   \inserttocsubsection\par%
   \vspace{0.24ex}%
 }
+
+% -----------------------------------------------------------------------------
+% Contents page
+% -----------------------------------------------------------------------------
+%
+% beamer puts a \vfill in front of every first-level entry of the contents list
+% (\beamer@sectionintoc in beamerbasetoc.sty).  Those \vfill s absorb the whole
+% leftover height of the frame and spread the list out over it, which defeats
+% both the [t] frame option and any attempt to balance the list in columns.
+% Replacing them with a fixed skip makes the contents list behave like ordinary
+% content, so "[t]" top-aligns it and multicols can balance it.
+%
+% Retune by redefining \MyPreTocSectionSkip in your preamble, e.g.
+%   \MyPreTocSectionSkip=1.0em
+\newdimen\MyPreTocSectionSkip
+\MyPreTocSectionSkip=1.2em
+
+\makeatletter
+\AtBeginDocument{%
+  \patchcmd{\beamer@sectionintoc}{\vfill}{\vskip\MyPreTocSectionSkip}{}{%
+    \PackageWarning{beamerthemeMyPre}{%
+      Cannot patch \string\beamer@sectionintoc; the contents list may be
+      stretched vertically instead of top-aligned}%
+  }%
+}
+\makeatother
+
+\newsavebox{\MyPreTocScratchBox}
+\newcount\MyPreTocSecCount
+\newcount\MyPreTocSubCount
+\newdimen\MyPreTocSecLine
+\newdimen\MyPreTocSubLine
+\newdimen\MyPreTocEstimated
+\newdimen\MyPreTocAvailable
+\newif\ifMyPreTocTwoColumns
+% Set \MyPreTocDebugtrue in your preamble to see how the layout is chosen.
+\newif\ifMyPreTocDebug
+
+\makeatletter
+% Count the entries by re-reading the .toc file with counting stand-ins for the
+% macros beamer writes into it.  (Measuring the typeset list in a box is not an
+% option: \beamer@sectionintoc expands through \only + \gdef, which breaks
+% outside beamer's overlay context.)
+\def\MyPre@tocCountSec#1#2#3#4#5{\global\advance\MyPreTocSecCount\@ne}
+\def\MyPre@tocCountSub#1#2#3#4#5#6{\global\advance\MyPreTocSubCount\@ne}
+
+\newcommand{\MyPre@tocCount}{%
+  \MyPreTocSecCount\z@ \MyPreTocSubCount\z@
+  \IfFileExists{\jobname.toc}{%
+    \begingroup
+      % The .toc file spells its entries \beamer@sectionintoc / \beamer@...
+      % so "@" has to be a letter while the file is read -- same trick beamer
+      % itself uses around \@input in \beamer@tableofcontents.
+      \makeatletter
+      \let\beamer@sectionintoc\MyPre@tocCountSec
+      \let\beamer@subsectionintoc\MyPre@tocCountSub
+      \input{\jobname.toc}%
+    \endgroup
+  }{}%
+}
+
+% Height of one entry: the line box at that entry's own font size plus the
+% trailing \vspace used by the two templates above.  Section titles long enough
+% to wrap are counted as one line, which only makes the estimate optimistic.
+\newcommand{\MyPre@tocEntryHeights}{%
+  \begingroup
+    \usebeamerfont{section in toc}%
+    \setbox\MyPreTocScratchBox\hbox{\strut}%
+    \global\MyPreTocSecLine\dimexpr\ht\MyPreTocScratchBox+\dp\MyPreTocScratchBox+0.45ex\relax
+  \endgroup
+  \begingroup
+    \usebeamerfont{subsection in toc}%
+    \setbox\MyPreTocScratchBox\hbox{\strut}%
+    \global\MyPreTocSubLine\dimexpr\ht\MyPreTocScratchBox+\dp\MyPreTocScratchBox+0.24ex\relax
+  \endgroup
+}
+
+\newcommand{\MyPre@tocDecide}{%
+  \MyPre@tocCount
+  \MyPre@tocEntryHeights
+  % The inter-section skip separates sections, so there are (n-1) of them; the
+  % one the patch would otherwise add in front of the first section is already
+  % covered by beamer's own \vspace*{-.5em} in \beamer@tableofcontents.
+  \count@\MyPreTocSecCount
+  \ifnum\count@>\z@ \advance\count@\m@ne \fi
+  \MyPreTocEstimated\dimexpr
+      \MyPreTocSecCount\MyPreTocSecLine
+    + \MyPreTocSubCount\MyPreTocSubLine
+    + \count@\MyPreTocSectionSkip
+    \relax
+  % \textheight is the frame body, and the frame title box sits inside it.
+  \MyPreTocAvailable\dimexpr\textheight-17.4mm-6mm\relax
+  \ifdim\MyPreTocEstimated>\MyPreTocAvailable
+    \MyPreTocTwoColumnstrue
+  \else
+    \MyPreTocTwoColumnsfalse
+  \fi
+  % Warn when even two columns would not be enough, i.e. when the list split
+  % over two columns is taller per column than the space available.
+  % Half-width columns make long titles wrap, which the one-line-per-entry
+  % estimate above does not account for, but the estimate is itself ~4%
+  % pessimistic, which covers that.
+  \ifdim\MyPreTocEstimated>2\MyPreTocAvailable
+    \PackageWarning{beamerthemeMyPre}{%
+      Contents list is long (\the\MyPreTocSecCount\space sections,
+      \the\MyPreTocSubCount\space subsections).  It will not fit on one slide
+      even in two columns; split it explicitly with
+      \string\MyPreTOC[sections={1-N}] and continue with
+      \string\MyPreTOC[sections={N+1-M}]}%
+  \fi
+  \ifMyPreTocDebug
+    \typeout{MyPreTOC: \the\MyPreTocSecCount\space sections,
+      \the\MyPreTocSubCount\space subsections; section line
+      \the\MyPreTocSecLine, subsection line \the\MyPreTocSubLine, skip
+      \the\MyPreTocSectionSkip; estimated \the\MyPreTocEstimated, available
+      \the\MyPreTocAvailable, two-columns=\ifMyPreTocTwoColumns yes\else no\fi}%
+  \fi
+}
+\makeatother
+
+% \MyPreTOC            -- one column, or two when the list does not fit
+% \MyPreTOC[sections={1-4}]  -- pass options straight through to \tableofcontents
+\makeatletter
+\NewDocumentCommand{\MyPreTOC}{O{}}{%
+  \ifstrequal{#1}{}{%
+    \MyPre@tocDecide
+    \ifMyPreTocTwoColumns
+      \begin{multicols}{2}%
+        \tableofcontents
+      \end{multicols}%
+    \else
+      \tableofcontents
+    \fi
+  }{%
+    \tableofcontents[#1]%
+  }%
+}
+\makeatother
 
 \setbeamerfont{page number in head/foot}{size*={12pt}{12pt},series=\bfseries}
 \setbeamercolor{page number in head/foot}{fg=MyPreNavy,bg=white}
